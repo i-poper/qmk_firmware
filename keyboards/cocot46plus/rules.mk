@@ -32,3 +32,7 @@ OLED_DRIVER     = SSD1306
 # Disable unnecessary functions to reduce firmware size
 SPACE_CADET_ENABLE = no
 MAGIC_ENABLE = no
+
+ifeq ($(strip $(OLED_ENABLE)), yes)
+  SRC += oled.c
+endif
