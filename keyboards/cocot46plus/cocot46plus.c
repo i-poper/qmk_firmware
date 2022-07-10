@@ -100,6 +100,9 @@ uint16_t MotionStart       = 0;      // Timer for accel, 0 is resting state
 static int16_t h_acm       = 0;
 static int16_t v_acm       = 0;
 
+// remainder
+static int16_t x_rem       = 0;
+static int16_t y_rem       = 0;
 
 void pointing_device_init_kb(void) {
     // set the CPI.
@@ -108,9 +111,16 @@ void pointing_device_init_kb(void) {
 
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
+    int32_t cos_a = _cos[cocot_config.rotation_angle];
+    int32_t sin_a = _sin[cocot_config.rotation_angle];
 
-    int8_t x_rev = (+ mouse_report.x * _cos[cocot_config.rotation_angle] - mouse_report.y * _sin[cocot_config.rotation_angle])/TIMES;
-    int8_t y_rev = (+ mouse_report.x * _sin[cocot_config.rotation_angle] + mouse_report.y * _cos[cocot_config.rotation_angle])/TIMES;
+    int32_t x = + mouse_report.x * cos_a - mouse_report.y * sin_a + x_rem;
+    int8_t x_rev = x / TIMES;
+    x_rem = x % TIMES;
+
+    int32_t y = + mouse_report.x * sin_a + mouse_report.y * cos_a + y_rem;
+    int8_t y_rev = y / TIMES;
+    y_rem = y % TIMES;
 
     if (cocot_get_scroll_mode()) {
         // rock scroll direction
