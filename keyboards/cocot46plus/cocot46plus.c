@@ -16,7 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "quantum.h"
-#include <math.h>
 #include "cocot46plus.h"
 #include "wait.h"
 #include "debug.h"
@@ -60,6 +59,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    define COCOT_ROTATION_DEFAULT 2
 #endif
 
+#define TIMES (1000)
+
+const int32_t _cos[] = {
+    cos(-60  * (M_PI / 180) * -1) * TIMES,
+    cos(-45  * (M_PI / 180) * -1) * TIMES,
+    cos(-30  * (M_PI / 180) * -1) * TIMES,
+    cos(-15  * (M_PI / 180) * -1) * TIMES,
+    cos(  0  * (M_PI / 180) * -1) * TIMES,
+    cos( 15  * (M_PI / 180) * -1) * TIMES,
+    cos( 30  * (M_PI / 180) * -1) * TIMES,
+    cos( 45  * (M_PI / 180) * -1) * TIMES,
+    cos( 60  * (M_PI / 180) * -1) * TIMES,
+};
+
+const int32_t _sin[] = {
+    sin(-60  * (M_PI / 180) * -1) * TIMES,
+    sin(-45  * (M_PI / 180) * -1) * TIMES,
+    sin(-30  * (M_PI / 180) * -1) * TIMES,
+    sin(-15  * (M_PI / 180) * -1) * TIMES,
+    sin(  0  * (M_PI / 180) * -1) * TIMES,
+    sin( 15  * (M_PI / 180) * -1) * TIMES,
+    sin( 30  * (M_PI / 180) * -1) * TIMES,
+    sin( 45  * (M_PI / 180) * -1) * TIMES,
+    sin( 60  * (M_PI / 180) * -1) * TIMES,
+};
 
 cocot_config_t cocot_config;
 uint16_t cpi_array[] = COCOT_CPI_OPTIONS;
@@ -87,9 +111,8 @@ void pointing_device_init_kb(void) {
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
 
-    double rad = angle_array[cocot_config.rotation_angle] * (M_PI / 180) * -1;
-    int8_t x_rev =  + mouse_report.x * cos(rad) - mouse_report.y * sin(rad);
-    int8_t y_rev =  + mouse_report.x * sin(rad) + mouse_report.y * cos(rad);
+    int8_t x_rev = (+ mouse_report.x * _cos[cocot_config.rotation_angle] - mouse_report.y * _sin[cocot_config.rotation_angle])/TIMES;
+    int8_t y_rev = (+ mouse_report.x * _sin[cocot_config.rotation_angle] + mouse_report.y * _cos[cocot_config.rotation_angle])/TIMES;
 
     if (cocot_get_scroll_mode()) {
         // rock scroll direction
