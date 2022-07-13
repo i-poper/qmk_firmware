@@ -48,7 +48,6 @@ typedef union {
         uint8_t rotation_angle;
         int8_t scrl_inv;
         bool scrl_mode;
-        report_mouse_t last_mouse;
     };
 } cocot_config_t;
 
@@ -57,16 +56,14 @@ typedef union {
 extern cocot_config_t cocot_config;
 
 enum cocot_keycodes {
-
-    COCOT_SAFE_RANGE = SAFE_RANGE,
-    CPI_SW,
+    CPI_SW = SAFE_RANGE,
     SCRL_SW,
     ROT_R15,
     ROT_L15,
     SCRL_MO,
     SCRL_TO,
     SCRL_IN,
-
+    COCOT_SAFE_RANGE,
 };
 
 bool encoder_update_user(uint8_t index, bool clockwise);
