@@ -37,7 +37,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #ifndef COCOT_SCROLL_DIVIDERS
-#    define COCOT_SCROLL_DIVIDERS { 1, 2, 3, 4, 5, 6 }
+//    define COCOT_SCROLL_DIVIDERS { 1, 2, 3, 4, 5, 6 }
+//    define COCOT_SCROLL_DIVIDERS { 5, 10, 15, 20, 35, 48 }
+#    define COCOT_SCROLL_DIVIDERS { 2, 4, 8, 16, 32, 64 }
 #    ifndef COCOT_SCROLL_DIV_DEFAULT
 #       define COCOT_SCROLL_DIV_DEFAULT 4
 #    endif
@@ -57,6 +59,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    define COCOT_ROTATION_DEFAULT 2
 #endif
 
+#define BASE_CPI 750
 #define TIMES (1000)
 
 const int32_t _cos[] = {
@@ -85,7 +88,7 @@ const int32_t _sin[] = {
 
 cocot_config_t cocot_config;
 uint16_t cpi_array[] = COCOT_CPI_OPTIONS;
-uint16_t scrl_div_array[] = COCOT_SCROLL_DIVIDERS;
+int16_t scrl_div_array[] = COCOT_SCROLL_DIVIDERS;
 uint16_t angle_array[] = COCOT_ROTATION_ANGLE;
 #define CPI_OPTION_SIZE (sizeof(cpi_array) / sizeof(uint16_t))
 #define SCRL_DIV_SIZE (sizeof(scrl_div_array) / sizeof(uint16_t))
@@ -109,6 +112,15 @@ void pointing_device_init_kb(void) {
     pointing_device_set_cpi(cpi_array[cocot_config.cpi_idx]);
 }
 
+int8_t calc_report( int8_t report, int8_t rev ) {
+  int16_t ret = (int16_t)report + rev;
+  if (ret > 127) {
+    ret = 127;
+  } else if ( ret < -127 ) {
+    ret = -127;
+  }
+  return ret;
+}
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
     int32_t cos_a = _cos[cocot_config.rotation_angle];
@@ -131,31 +143,24 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
         }
 
         // accumulate scroll
-        h_acm += x_rev * cocot_config.scrl_inv;
-        v_acm += y_rev * cocot_config.scrl_inv * -1;
+        int16_t div = scrl_div_array[cocot_config.scrl_div];
+        int32_t cpi = cpi_array[cocot_config.cpi_idx];
 
-        int8_t h_rev = h_acm >> scrl_div_array[cocot_config.scrl_div];
-        int8_t v_rev = v_acm >> scrl_div_array[cocot_config.scrl_div];
+        h_acm += (((int32_t)x_rev * BASE_CPI)/cpi) * cocot_config.scrl_inv;
+        v_acm += (((int32_t)y_rev * BASE_CPI)/cpi) * cocot_config.scrl_inv * -1;
+
+        int8_t h_rev = h_acm / div;
+        int8_t v_rev = v_acm / div;
 
         // clear accumulated scroll on assignment
 
         if (h_rev != 0) {
-            if (mouse_report.h + h_rev > 127) {
-                h_rev = 127 - mouse_report.h;
-            } else if (mouse_report.h + h_rev < -127) {
-                h_rev = -127 - mouse_report.h;
-            }
-            mouse_report.h += h_rev;
-            h_acm -= h_rev << scrl_div_array[cocot_config.scrl_div];
+            mouse_report.h = calc_report(mouse_report.h, h_rev);
+            h_acm = h_acm % div;
         }
         if (v_rev != 0) {
-            if (mouse_report.v + v_rev > 127) {
-                v_rev = 127 - mouse_report.v;
-            } else if (mouse_report.v + v_rev < -127) {
-                v_rev = -127 - mouse_report.v;
-            }
-            mouse_report.v += v_rev;
-            v_acm -= v_rev << scrl_div_array[cocot_config.scrl_div];
+            mouse_report.v = calc_report(mouse_report.v, v_rev);
+            v_acm = v_acm % div;
         }
 
         mouse_report.x = 0;

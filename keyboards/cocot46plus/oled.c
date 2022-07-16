@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 
 extern uint16_t cpi_array[];
-extern uint16_t scrl_div_array[];
+extern int16_t scrl_div_array[];
 extern uint16_t angle_array[];
 
 static const char PROGMEM cocot_logo[] = {
