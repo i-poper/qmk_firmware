@@ -58,30 +58,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #define TIMES (1000)
+#define DEGS 90
+#define m_sin( x ) (sin(x * (M_PI / 180) * -1) * TIMES)
 
-const int32_t _cos[] = {
-    cos(-60  * (M_PI / 180) * -1) * TIMES,
-    cos(-45  * (M_PI / 180) * -1) * TIMES,
-    cos(-30  * (M_PI / 180) * -1) * TIMES,
-    cos(-15  * (M_PI / 180) * -1) * TIMES,
-    cos(  0  * (M_PI / 180) * -1) * TIMES,
-    cos( 15  * (M_PI / 180) * -1) * TIMES,
-    cos( 30  * (M_PI / 180) * -1) * TIMES,
-    cos( 45  * (M_PI / 180) * -1) * TIMES,
-    cos( 60  * (M_PI / 180) * -1) * TIMES,
+const int32_t sin_table[] = {
+    m_sin(0),m_sin(1),m_sin(2),m_sin(3),m_sin(4),m_sin(5),m_sin(6),m_sin(7),m_sin(8),m_sin(9),m_sin(10),
+    m_sin(11),m_sin(12),m_sin(13),m_sin(14),m_sin(15),m_sin(16),m_sin(17),m_sin(18),m_sin(19),m_sin(20),
+    m_sin(21),m_sin(22),m_sin(23),m_sin(24),m_sin(25),m_sin(26),m_sin(27),m_sin(28),m_sin(29),m_sin(30),
+    m_sin(31),m_sin(32),m_sin(33),m_sin(34),m_sin(35),m_sin(36),m_sin(37),m_sin(38),m_sin(39),m_sin(40),
+    m_sin(41),m_sin(42),m_sin(43),m_sin(44),m_sin(45),m_sin(46),m_sin(47),m_sin(48),m_sin(49),m_sin(50),
+    m_sin(51),m_sin(52),m_sin(53),m_sin(54),m_sin(55),m_sin(56),m_sin(57),m_sin(58),m_sin(59),m_sin(60),
+    m_sin(61),m_sin(62),m_sin(63),m_sin(64),m_sin(65),m_sin(66),m_sin(67),m_sin(68),m_sin(69),m_sin(70),
+    m_sin(71),m_sin(72),m_sin(73),m_sin(74),m_sin(75),m_sin(76),m_sin(77),m_sin(78),m_sin(79),m_sin(80),
+    m_sin(81),m_sin(82),m_sin(83),m_sin(84),m_sin(85),m_sin(86),m_sin(87),m_sin(88),m_sin(89),m_sin(90)
 };
 
-const int32_t _sin[] = {
-    sin(-60  * (M_PI / 180) * -1) * TIMES,
-    sin(-45  * (M_PI / 180) * -1) * TIMES,
-    sin(-30  * (M_PI / 180) * -1) * TIMES,
-    sin(-15  * (M_PI / 180) * -1) * TIMES,
-    sin(  0  * (M_PI / 180) * -1) * TIMES,
-    sin( 15  * (M_PI / 180) * -1) * TIMES,
-    sin( 30  * (M_PI / 180) * -1) * TIMES,
-    sin( 45  * (M_PI / 180) * -1) * TIMES,
-    sin( 60  * (M_PI / 180) * -1) * TIMES,
-};
+#define _SIN(x) pickup_sin_table((x<0)*2, x)
+#define _COS(x) pickup_sin_table(3, x)
 
 cocot_config_t cocot_config;
 uint16_t cpi_array[] = COCOT_CPI_OPTIONS;
@@ -89,7 +82,7 @@ uint16_t scrl_div_array[] = COCOT_SCROLL_DIVIDERS;
 uint16_t angle_array[] = COCOT_ROTATION_ANGLE;
 #define CPI_OPTION_SIZE (sizeof(cpi_array) / sizeof(uint16_t))
 #define SCRL_DIV_SIZE (sizeof(scrl_div_array) / sizeof(uint16_t))
-#define ANGLE_SIZE (sizeof(angle_array) / sizeof(uint16_t))
+#define ANGLE_SIZE (sizeof(angle_array) / sizeof(int16_t))
 
 
 // Trackball State
@@ -101,6 +94,23 @@ static int16_t h_acm       = 0;
 static int16_t v_acm       = 0;
 
 
+int32_t pickup_sin_table(int16_t add, int16_t deg) {
+    uint16_t degree = abs(deg);
+    uint16_t deg90 = degree % DEGS;
+    int32_t ret;
+    switch ( (degree / DEGS + add) % 4 ) {
+    case 0:
+        ret = sin_table[deg90]; break;
+    case 1:
+        ret = sin_table[DEGS-deg90]; break;
+    case 2:
+        ret = -sin_table[deg90]; break;
+    case 3:
+        ret = -sin_table[DEGS-deg90]; break;
+    }
+    return ret;
+}
+
 void pointing_device_init_kb(void) {
     // set the CPI.
     pointing_device_set_cpi(cpi_array[cocot_config.cpi_idx]);
@@ -109,8 +119,11 @@ void pointing_device_init_kb(void) {
 
 report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
 
-    int8_t x_rev = (+ mouse_report.x * _cos[cocot_config.rotation_angle] - mouse_report.y * _sin[cocot_config.rotation_angle])/TIMES;
-    int8_t y_rev = (+ mouse_report.x * _sin[cocot_config.rotation_angle] + mouse_report.y * _cos[cocot_config.rotation_angle])/TIMES;
+    int16_t angle = angle_array[cocot_config.rotation_angle];
+    int32_t sin = _SIN(angle);
+    int32_t cos = _COS(angle);
+    int8_t x_rev = (+ mouse_report.x * cos - mouse_report.y * sin)/TIMES;
+    int8_t y_rev = (+ mouse_report.x * sin + mouse_report.y * cos)/TIMES;
 
     if (cocot_get_scroll_mode()) {
         // accumulate scroll
@@ -124,7 +137,7 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
 
         if (h_rev != 0) {
             if (mouse_report.h + h_rev > 127) {
-                h_rev = 127 - mouse_report.h;
+                h_rev = 127  - mouse_report.h;
             } else if (mouse_report.h + h_rev < -127) {
                 h_rev = -127 - mouse_report.h;
             }
