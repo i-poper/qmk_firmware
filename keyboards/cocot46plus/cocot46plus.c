@@ -82,7 +82,7 @@ uint16_t scrl_div_array[] = COCOT_SCROLL_DIVIDERS;
 uint16_t angle_array[] = COCOT_ROTATION_ANGLE;
 #define CPI_OPTION_SIZE (sizeof(cpi_array) / sizeof(uint16_t))
 #define SCRL_DIV_SIZE (sizeof(scrl_div_array) / sizeof(uint16_t))
-#define ANGLE_SIZE (sizeof(angle_array) / sizeof(int16_t))
+#define ANGLE_SIZE (sizeof(angle_array) / sizeof(uint16_t))
 
 
 // Trackball State
@@ -137,7 +137,7 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
 
         if (h_rev != 0) {
             if (mouse_report.h + h_rev > 127) {
-                h_rev = 127  - mouse_report.h;
+                h_rev = 127 - mouse_report.h;
             } else if (mouse_report.h + h_rev < -127) {
                 h_rev = -127 - mouse_report.h;
             }
